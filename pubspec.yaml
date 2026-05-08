@@ -1,0 +1,56 @@
+name: vibenime
+description: "VibeNime — Aplikasi streaming anime mobile bersubtitle Indonesia."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.5
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+  # State management
+  flutter_riverpod: ^2.6.1
+
+  # Routing
+  go_router: ^14.6.2
+
+  # Network
+  dio: ^5.7.0
+  dio_cache_interceptor: ^3.5.0
+
+  # GraphQL (AniList)
+  graphql_flutter: ^5.2.0-beta.7
+
+  # Player
+  better_player_plus: ^1.0.8
+  youtube_player_flutter: ^9.1.1
+
+  # Auth / OAuth
+  flutter_web_auth_2: ^4.0.1
+  flutter_secure_storage: ^9.2.2
+  webview_flutter: ^4.10.0
+
+  # Local storage
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+
+  # Misc
+  flutter_dotenv: ^5.2.1
+  cached_network_image: ^3.4.1
+  google_fonts: ^6.2.1
+  intl: ^0.20.2
+  shimmer: ^3.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  mocktail: ^1.0.4
+
+flutter:
+  uses-material-design: true
+  assets:
+    - .env

@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(flutter --version)",
+      "Bash(mv \"D:\\\\VibeNime\\\\PRD.md\" \"D:\\\\PRD_backup.md\")",
+      "Bash(mv \"D:\\\\VibeNime\\\\README.md\" \"D:\\\\README_backup.md\")",
+      "Bash(flutter create *)",
+      "Bash(mv -f \"D:\\\\PRD_backup.md\" \"D:\\\\VibeNime\\\\PRD.md\")",
+      "Bash(mv -f \"D:\\\\README_backup.md\" \"D:\\\\VibeNime\\\\README.md\")",
+      "Bash(flutter pub *)",
+      "Bash(flutter analyze *)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "Bash(gh api *)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(flutter devices *)",
+      "Bash(flutter run *)",
+      "Bash(tasklist)",
+      "Bash(flutter doctor *)",
+      "Bash(flutter build *)",
+      "Bash(flutter install *)"
+    ]
+  }
+}
