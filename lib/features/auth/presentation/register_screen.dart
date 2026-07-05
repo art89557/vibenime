@@ -7,6 +7,7 @@ import '../../../core/i18n/l10n_extension.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/haptic_helper.dart';
+import '../../favorites/data/favorites_sync_coordinator.dart';
 import '../../history/data/watch_history_sync_coordinator.dart';
 import 'app_auth_controller.dart';
 import '../../../core/theme/app_radius.dart';
@@ -98,6 +99,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         ),
       );
       syncWatchHistory(ref); // unggah progress nonton guest ke cloud
+      syncFavorites(ref); // unggah My List guest ke cloud
       context.go(AppRoutes.home);
     } else {
       final error = ref.read(appAuthControllerProvider).error;

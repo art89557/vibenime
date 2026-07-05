@@ -7,6 +7,7 @@ import '../../../core/i18n/l10n_extension.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/haptic_helper.dart';
+import '../../favorites/data/favorites_sync_coordinator.dart';
 import '../../history/data/watch_history_sync_coordinator.dart';
 import 'app_auth_controller.dart';
 
@@ -55,6 +56,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (!mounted) return;
     if (ok) {
       syncWatchHistory(ref); // tarik progress nonton dari cloud
+      syncFavorites(ref); // tarik My List dari cloud
       context.go(AppRoutes.home);
     } else {
       final error = ref.read(appAuthControllerProvider).error;

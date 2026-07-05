@@ -18,6 +18,7 @@ import '../../../shared/widgets/section_header.dart';
 import '../../anime_detail/presentation/anime_detail_providers.dart';
 import '../../../core/settings/app_settings.dart';
 import '../../auth/presentation/app_auth_controller.dart';
+import '../../favorites/data/favorites_sync_coordinator.dart';
 import '../../history/data/history_entry.dart';
 import '../../history/data/watch_history_sync_coordinator.dart';
 import '../../history/presentation/history_item_menu.dart';
@@ -53,8 +54,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       rescheduleEpisodeNotifications(ref);
-      // Sinkron progress nonton dari cloud (no-op kalau guest/offline).
+      // Sinkron progress nonton + favorit dari cloud (no-op guest/offline).
       syncWatchHistory(ref);
+      syncFavorites(ref);
     });
   }
 

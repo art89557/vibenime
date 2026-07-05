@@ -34,19 +34,24 @@ enum WatchStatus {
 /// Disimpan local di Hive box `favorites` — key=`animeId.toString()`,
 /// value=`toJson()`. Tidak butuh akun, tidak sync ke server.
 class FavoriteEntry {
-  const FavoriteEntry({
+  FavoriteEntry({
     required this.animeId,
     required this.title,
     required this.coverImage,
     required this.addedAt,
     this.status = WatchStatus.planning,
     this.totalEpisodes,
-  });
+    DateTime? updatedAt,
+  }) : updatedAt = updatedAt ?? addedAt;
 
   final int animeId;
   final String title;
   final String coverImage;
   final DateTime addedAt;
+
+  /// Kapan terakhir entry berubah (add/ganti status) — dipakai cloud sync
+  /// untuk resolve konflik last-write-wins. Default = [addedAt].
+  final DateTime updatedAt;
 
   /// Status nonton: planning (default) / watching / completed.
   final WatchStatus status;
@@ -55,7 +60,11 @@ class FavoriteEntry {
   /// progress bar "EP X / Y" tanpa fetch ulang AniList.
   final int? totalEpisodes;
 
-  FavoriteEntry copyWith({WatchStatus? status, int? totalEpisodes}) {
+  FavoriteEntry copyWith({
+    WatchStatus? status,
+    int? totalEpisodes,
+    DateTime? updatedAt,
+  }) {
     return FavoriteEntry(
       animeId: animeId,
       title: title,
@@ -63,6 +72,7 @@ class FavoriteEntry {
       addedAt: addedAt,
       status: status ?? this.status,
       totalEpisodes: totalEpisodes ?? this.totalEpisodes,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
@@ -73,18 +83,24 @@ class FavoriteEntry {
     'title': title,
     'coverImage': coverImage,
     'addedAt': addedAt.millisecondsSinceEpoch,
+    'updatedAt': updatedAt.millisecondsSinceEpoch,
     'status': status.code,
     'totalEpisodes': totalEpisodes,
   };
 
   factory FavoriteEntry.fromJson(Map<dynamic, dynamic> json) {
+    final addedAt = DateTime.fromMillisecondsSinceEpoch(
+      (json['addedAt'] as int?) ?? 0,
+    );
     return FavoriteEntry(
       animeId: json['animeId'] as int,
       title: (json['title'] as String?) ?? '',
       coverImage: (json['coverImage'] as String?) ?? '',
-      addedAt: DateTime.fromMillisecondsSinceEpoch(
-        (json['addedAt'] as int?) ?? 0,
-      ),
+      addedAt: addedAt,
+      // Data lama (pra-sync) tak punya updatedAt → fallback addedAt.
+      updatedAt: (json['updatedAt'] as int?) != null
+          ? DateTime.fromMillisecondsSinceEpoch(json['updatedAt'] as int)
+          : addedAt,
       status: WatchStatus.fromCode(json['status'] as String?),
       totalEpisodes: (json['totalEpisodes'] as num?)?.toInt(),
     );

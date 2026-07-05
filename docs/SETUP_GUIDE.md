@@ -293,6 +293,32 @@ lalu di `.env`: `MIRURO_API_URL=http://<IP-LAN-PC>:8000` (HP & PC satu WiFi).
 
 ---
 
+## Bagian 4C — Build Release (mesin RAM terbatas)
+
+R8/ProGuard (shrinker) rakus RAM — di mesin ~7GB sering **OOM** ("Gradle daemon
+disappeared"). `gradle.properties` sudah dibatasi (`-Xmx2048M`), dan untuk release
+pakai kombinasi ini:
+
+```bash
+# WAJIB sebelum release (hindari .env stale ke-bundle):
+flutter clean
+
+# Release TANPA R8 + APK per-ABI (lebih kecil dari fat-APK walau tanpa shrink):
+flutter build apk --release --no-shrink --split-per-abi
+# Output: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk (HP modern)
+```
+
+Catatan:
+- `--no-shrink` mematikan R8 → build lolos di RAM kecil. `--split-per-abi`
+  memangkas ukuran (hanya native lib 1 arsitektur) — biasanya lebih kecil dari
+  fat-APK ter-shrink sekalipun.
+- **Crash reporting (`crash_logs`) hanya aktif di build release** — jadi jalur
+  ini juga prasyarat observability produksi.
+- Kalau build di mesin ber-RAM besar (CI), boleh release normal (R8 aktif,
+  `proguard-rules.pro` sudah ada).
+
+---
+
 ## Bagian 5 — Troubleshooting
 
 | Masalah | Solusi |

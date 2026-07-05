@@ -28,6 +28,7 @@ class FavoritesRepository {
         ? existing.copyWith(
             status: status,
             totalEpisodes: anime.episodes ?? existing.totalEpisodes,
+            updatedAt: DateTime.now(),
           )
         : FavoriteEntry(
             animeId: anime.id,
@@ -48,9 +49,13 @@ class FavoritesRepository {
     if (existing.status == status) return; // skip redundant write
     await _box.put(
       FavoriteEntry.storageKey(animeId),
-      existing.copyWith(status: status).toJson(),
+      existing.copyWith(status: status, updatedAt: DateTime.now()).toJson(),
     );
   }
+
+  /// Simpan entry apa adanya (dipakai cloud sync — jangan bump updatedAt).
+  Future<void> saveRaw(FavoriteEntry entry) =>
+      _box.put(FavoriteEntry.storageKey(entry.animeId), entry.toJson());
 
   /// Convenience: tap "+" di card → kalau belum ada add sebagai Planning,
   /// kalau sudah ada → remove. Return true kalau setelah action sekarang

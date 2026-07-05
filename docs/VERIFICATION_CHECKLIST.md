@@ -12,6 +12,7 @@ sempat lepas dari USB. Ikuti urutan ini saat HP tersambung.
 Wajib untuk fitur cloud. Tanpa ini, fitur ybs gagal *graceful* (tak crash, cuma tak jalan).
 - [ ] `sql/06_watch_history.sql` — sinkron progress nonton lintas device.
 - [ ] `sql/07_crash_logs.sql` — crash reporting.
+- [ ] `sql/08_favorites.sql` — sinkron My List/favorit lintas device.
 
 ### 0.2 Deploy APK
 ```bash
