@@ -710,7 +710,7 @@ class _GiftPickerSheetState extends State<_GiftPickerSheet>
             tabs: const [
               Tab(text: 'Reactions'),
               Tab(text: 'Anime'),
-              Tab(text: 'Special ✨'),
+              Tab(text: 'Special'),
             ],
           ),
           Expanded(

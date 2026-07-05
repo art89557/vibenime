@@ -74,20 +74,9 @@ class _TopRankCarouselState extends State<TopRankCarousel> {
               setState(() => _currentPage = i);
             },
             itemBuilder: (context, index) {
-              return AnimatedBuilder(
-                animation: _controller,
-                builder: (context, child) {
-                  // Kartu non-aktif mengecil ke 90% saat di-swipe.
-                  double scale = index == _currentPage ? 1.0 : 0.9;
-                  if (_controller.position.haveDimensions) {
-                    final page =
-                        _controller.page ?? _controller.initialPage.toDouble();
-                    scale = (1 - ((page - index).abs() * 0.1)).clamp(0.9, 1.0);
-                  }
-                  return Transform.scale(scale: scale, child: child);
-                },
-                child: _RankBannerCard(rank: index + 1, anime: items[index]),
-              );
+              // Flat — tanpa scale transition per-frame (diet performa:
+              // AnimatedBuilder memicu rebuild+repaint tiap piksel swipe).
+              return _RankBannerCard(rank: index + 1, anime: items[index]);
             },
           ),
         ),
@@ -130,7 +119,7 @@ class _DotsIndicator extends StatelessWidget {
 }
 
 /// Satu banner peringkat: cover + scrim 3-stop + trophy badge + metadata,
-/// dibungkus aura BoxShadow sesuai tema medali.
+/// dengan border tipis warna medali (glow shadow dihapus — diet performa).
 class _RankBannerCard extends StatelessWidget {
   const _RankBannerCard({required this.rank, required this.anime});
 
@@ -146,17 +135,11 @@ class _RankBannerCard extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        // Glow BoxShadow dihapus (mahal di-repaint saat swipe) → border tipis
+        // warna medali (murah, aksen tetap terasa).
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(AppRadius.xl),
-          // Aura glow lembut sesuai tema medali.
-          boxShadow: [
-            BoxShadow(
-              color: theme.color.withValues(alpha: 0.15),
-              blurRadius: 18,
-              spreadRadius: 1,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          border: Border.all(color: theme.color.withValues(alpha: 0.45)),
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(AppRadius.xl),
@@ -168,6 +151,7 @@ class _RankBannerCard extends StatelessWidget {
                 Container(color: AppColors.surfaceElevated(context))
               else
                 CachedNetworkImage(
+                  memCacheWidth: 800,
                   imageUrl: anime.coverImage,
                   fit: BoxFit.cover,
                   placeholder: (c, _) =>
@@ -204,12 +188,6 @@ class _RankBannerCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: theme.color,
                     borderRadius: BorderRadius.circular(AppRadius.sm),
-                    boxShadow: [
-                      BoxShadow(
-                        color: theme.color.withValues(alpha: 0.5),
-                        blurRadius: 8,
-                      ),
-                    ],
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,

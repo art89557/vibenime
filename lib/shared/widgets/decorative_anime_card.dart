@@ -47,6 +47,7 @@ class DecorativeAnimeCard extends StatelessWidget {
                 Container(color: AppColors.surfaceElevated(context))
               else
                 CachedNetworkImage(
+                  memCacheWidth: 400,
                   imageUrl: anime.coverImage,
                   fit: BoxFit.cover,
                   placeholder: (c, _) =>

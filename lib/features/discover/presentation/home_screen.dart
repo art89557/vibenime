@@ -313,7 +313,11 @@ class _ResumeBigCard extends ConsumerWidget {
                   fit: StackFit.expand,
                   children: [
                     if (url.isNotEmpty)
-                      CachedNetworkImage(imageUrl: url, fit: BoxFit.cover)
+                      CachedNetworkImage(
+                        imageUrl: url,
+                        memCacheWidth: 1080,
+                        fit: BoxFit.cover,
+                      )
                     else
                       Container(color: AppColors.surfaceElevated(context)),
                     const DecoratedBox(
@@ -664,7 +668,11 @@ class _RecentCard extends ConsumerWidget {
                     if (cover.isEmpty)
                       Container(color: AppColors.surfaceElevated(context))
                     else
-                      CachedNetworkImage(imageUrl: cover, fit: BoxFit.cover),
+                      CachedNetworkImage(
+                        imageUrl: cover,
+                        memCacheWidth: 400,
+                        fit: BoxFit.cover,
+                      ),
                     Center(
                       child: Container(
                         width: 38,

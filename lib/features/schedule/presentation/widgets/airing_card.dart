@@ -107,6 +107,7 @@ class AiringCard extends StatelessWidget {
                             child: item.coverImage.isEmpty
                                 ? Container(color: AppColors.surface(context))
                                 : CachedNetworkImage(
+                                    memCacheWidth: 400,
                                     imageUrl: item.coverImage,
                                     fit: BoxFit.cover,
                                   ),

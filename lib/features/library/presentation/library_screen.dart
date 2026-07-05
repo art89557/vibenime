@@ -11,7 +11,6 @@ import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/haptic_helper.dart';
 import '../../../shared/widgets/lottie_empty_state.dart';
-import '../../../shared/widgets/press_animation.dart';
 import '../../favorites/data/favorite_entry.dart';
 import '../../favorites/presentation/favorites_providers.dart';
 import '../../../core/theme/app_radius.dart';
@@ -243,10 +242,12 @@ class _LibraryCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final progress = ref.watch(progressProvider(entry.animeId));
 
-    return PressableScale(
+    // GestureDetector polos (PressableScale dihapus — controller per kartu
+    // terlalu mahal di grid panjang).
+    return GestureDetector(
       onTap: () =>
           context.push(AppRoutes.animeDetailPath(entry.animeId.toString())),
-      scaleDown: 0.96,
+      behavior: HitTestBehavior.opaque,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -263,6 +264,7 @@ class _LibraryCard extends ConsumerWidget {
                     Container(color: AppColors.surfaceElevated(context))
                   else
                     CachedNetworkImage(
+                      memCacheWidth: 400,
                       imageUrl: entry.coverImage,
                       fit: BoxFit.cover,
                       placeholder: (_, _) =>

@@ -118,6 +118,7 @@ class AnimeListCard extends ConsumerWidget {
                 child: anime.coverImage.isEmpty
                     ? Container(color: AppColors.surface(context))
                     : CachedNetworkImage(
+                        memCacheWidth: 300,
                         imageUrl: anime.coverImage,
                         fit: BoxFit.cover,
                         placeholder: (_, _) =>

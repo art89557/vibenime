@@ -30,6 +30,7 @@ class AnimeCompactCard extends StatelessWidget {
               child: anime.coverImage.isEmpty
                   ? Container(color: AppColors.surfaceElevated(context))
                   : CachedNetworkImage(
+                      memCacheWidth: 300,
                       imageUrl: anime.coverImage,
                       fit: BoxFit.cover,
                       placeholder: (_, _) =>

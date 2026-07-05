@@ -4,11 +4,10 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../models/anime.dart';
-import 'press_animation.dart';
 import '../../core/theme/app_radius.dart';
 
 /// Vertical poster card v2 (cyan accent).
-/// Layout: poster 2:3 + title bold + meta row (⭐ score · format).
+/// Layout: poster 2:3 + title bold + meta row (score · format).
 class AnimeCard extends StatelessWidget {
   const AnimeCard({
     required this.anime,
@@ -34,9 +33,11 @@ class AnimeCard extends StatelessWidget {
     return RepaintBoundary(
       child: SizedBox(
         width: width,
-        child: PressableScale(
+        // GestureDetector polos (PressableScale dihapus — 1 AnimationController
+        // per kartu terlalu mahal di grid panjang).
+        child: GestureDetector(
           onTap: onTap,
-          scaleDown: 0.95,
+          behavior: HitTestBehavior.opaque,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -59,6 +60,7 @@ class AnimeCard extends StatelessWidget {
                       child: anime.coverImage.isEmpty
                           ? _placeholder(context)
                           : CachedNetworkImage(
+                              memCacheWidth: 400,
                               imageUrl: anime.coverImage,
                               fit: BoxFit.cover,
                               placeholder: (c, _) => _placeholder(c),
@@ -79,6 +81,7 @@ class AnimeCard extends StatelessWidget {
                         child: anime.coverImage.isEmpty
                             ? _placeholder(context)
                             : CachedNetworkImage(
+                                memCacheWidth: 400,
                                 imageUrl: anime.coverImage,
                                 fit: BoxFit.cover,
                                 placeholder: (c, _) => _placeholder(c),

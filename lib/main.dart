@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -18,9 +20,14 @@ Future<void> main() async {
     // Pakai font yang sudah di-bundle (assets/fonts) — JANGAN fetch dari
     // network saat runtime. Menghilangkan jank first-paint + flash font.
     GoogleFonts.config.allowRuntimeFetching = false;
-    await Env.load();
-    await initHive();
-    await EpisodeNotificationService.instance.init();
+    // Env (.env) & Hive independen → jalankan PARALEL (hemat cold start).
+    await Future.wait([Env.load(), initHive()]);
+
+    // Init notifikasi TIDAK blocking first frame — jalan concurrent.
+    // Aman: scheduleEpisode/reschedule guard `_ready` (no-op kalau belum
+    // selesai), dan reschedule dipanggil post-frame dari Home (jauh setelah
+    // init ini rampung).
+    unawaited(EpisodeNotificationService.instance.init());
 
     // Init Supabase kalau credentials sudah di-set di .env.
     // Kalau belum, app tetap jalan dengan fallback ke YouTube/Mux.

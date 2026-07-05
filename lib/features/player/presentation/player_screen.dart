@@ -1,7 +1,6 @@
 import 'package:better_player_plus/better_player_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -675,13 +674,13 @@ class _SourceBadge extends StatelessWidget {
     // tahu source asli. Fallback ke emoji generic untuk payload tanpa tag.
     final tagged = payload.sourceLabel;
     if (tagged != null && tagged.isNotEmpty) {
-      label.write('📺 $tagged');
+      label.write(tagged);
     } else if (isLocal) {
-      label.write('💾 Offline');
+      label.write('Offline');
     } else if (isYoutube) {
-      label.write('🎬 YouTube');
+      label.write('YouTube');
     } else {
-      label.write('📺 Stream');
+      label.write('Stream');
     }
     if (totalSources > 1) {
       label.write(' · ${sourceIndex + 1}/$totalSources');
@@ -690,45 +689,46 @@ class _SourceBadge extends StatelessWidget {
       label.write(' (fallback)');
     }
 
+    // Tanpa animasi entrance (flutter_animate dihapus — diet performa).
     return GestureDetector(
-          onTap: onTap,
-          behavior: HitTestBehavior.opaque,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-              border: Border.all(color: color.withValues(alpha: 0.4)),
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          border: Border.all(color: color.withValues(alpha: 0.4)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isLocal
+                  ? Icons.offline_pin_rounded
+                  : (isYoutube
+                        ? Icons.smart_display_rounded
+                        : Icons.tv_rounded),
+              size: 13,
+              color: color,
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  label.toString(),
-                  style: GoogleFonts.roboto(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: color,
-                  ),
-                ),
-                if (onTap != null) ...[
-                  const SizedBox(width: 6),
-                  Icon(Icons.swap_horiz_rounded, size: 13, color: color),
-                ],
-              ],
+            const SizedBox(width: 5),
+            Text(
+              label.toString(),
+              style: GoogleFonts.roboto(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: color,
+              ),
             ),
-          ),
-        )
-        // Subtle pulse glow saat badge muncul — kasih hint visual ada
-        // pilihan source. Fade-in + scale dari 0.9 → 1.0.
-        .animate()
-        .fadeIn(duration: 350.ms, curve: Curves.easeOutCubic)
-        .scaleXY(
-          begin: 0.92,
-          end: 1.0,
-          duration: 350.ms,
-          curve: Curves.easeOutCubic,
-        );
+            if (onTap != null) ...[
+              const SizedBox(width: 6),
+              Icon(Icons.swap_horiz_rounded, size: 13, color: color),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 }
 

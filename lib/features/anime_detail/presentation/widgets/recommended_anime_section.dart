@@ -73,6 +73,7 @@ class _RecCard extends StatelessWidget {
                     child: item.coverImage.isEmpty
                         ? Container(color: AppColors.surfaceElevated(context))
                         : CachedNetworkImage(
+                            memCacheWidth: 300,
                             imageUrl: item.coverImage,
                             fit: BoxFit.cover,
                             errorWidget: (_, _, _) => Container(

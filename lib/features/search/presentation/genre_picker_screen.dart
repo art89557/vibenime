@@ -31,29 +31,30 @@ class GenrePickerScreen extends ConsumerStatefulWidget {
 class _GenrePickerScreenState extends ConsumerState<GenrePickerScreen> {
   late final Set<String> _selected;
 
-  /// Canonical AniList anime genres dengan icon emoji untuk visual.
+  /// Canonical AniList anime genres dengan Material icon untuk visual
+  /// (emoji dihapus — konsistensi + lebih ringan di-render).
   ///
   /// **Penting:** value (kanan) HARUS exact match dengan AniList API genre
   /// strings (case-sensitive). Kalau salah typo → filter tidak match.
   static const List<_GenreData> _genres = [
-    _GenreData('Action', '🗡️', 'Action'),
-    _GenreData('Adventure', '🧭', 'Adventure'),
-    _GenreData('Comedy', '😂', 'Comedy'),
-    _GenreData('Drama', '🎭', 'Drama'),
-    _GenreData('Ecchi', '💋', 'Ecchi'),
-    _GenreData('Fantasy', '🧙', 'Fantasy'),
-    _GenreData('Horror', '👻', 'Horror'),
-    _GenreData('Mahou Shoujo', '✨', 'Mahou Shoujo'),
-    _GenreData('Mecha', '🤖', 'Mecha'),
-    _GenreData('Music', '🎵', 'Music'),
-    _GenreData('Mystery', '🔍', 'Mystery'),
-    _GenreData('Psychological', '🧠', 'Psychological'),
-    _GenreData('Romance', '💖', 'Romance'),
-    _GenreData('Sci-Fi', '🚀', 'Sci-Fi'),
-    _GenreData('Slice of Life', '☕', 'Slice of Life'),
-    _GenreData('Sports', '⚽', 'Sports'),
-    _GenreData('Supernatural', '🔮', 'Supernatural'),
-    _GenreData('Thriller', '🗲', 'Thriller'),
+    _GenreData('Action', Icons.bolt_rounded, 'Action'),
+    _GenreData('Adventure', Icons.explore_rounded, 'Adventure'),
+    _GenreData('Comedy', Icons.sentiment_very_satisfied_rounded, 'Comedy'),
+    _GenreData('Drama', Icons.theater_comedy_rounded, 'Drama'),
+    _GenreData('Ecchi', Icons.favorite_border_rounded, 'Ecchi'),
+    _GenreData('Fantasy', Icons.auto_fix_high_rounded, 'Fantasy'),
+    _GenreData('Horror', Icons.nights_stay_rounded, 'Horror'),
+    _GenreData('Mahou Shoujo', Icons.auto_awesome_rounded, 'Mahou Shoujo'),
+    _GenreData('Mecha', Icons.smart_toy_rounded, 'Mecha'),
+    _GenreData('Music', Icons.music_note_rounded, 'Music'),
+    _GenreData('Mystery', Icons.search_rounded, 'Mystery'),
+    _GenreData('Psychological', Icons.psychology_rounded, 'Psychological'),
+    _GenreData('Romance', Icons.favorite_rounded, 'Romance'),
+    _GenreData('Sci-Fi', Icons.rocket_launch_rounded, 'Sci-Fi'),
+    _GenreData('Slice of Life', Icons.local_cafe_rounded, 'Slice of Life'),
+    _GenreData('Sports', Icons.sports_soccer_rounded, 'Sports'),
+    _GenreData('Supernatural', Icons.blur_on_rounded, 'Supernatural'),
+    _GenreData('Thriller', Icons.flash_on_rounded, 'Thriller'),
   ];
 
   @override
@@ -193,8 +194,8 @@ class _GenreData {
   /// Display label di UI (bisa dilokalisasi ke ID kalau perlu).
   final String name;
 
-  /// Emoji icon untuk hint visual.
-  final String icon;
+  /// Material icon untuk hint visual.
+  final IconData icon;
 
   /// String value yang dikirim ke AniList GraphQL `genre_in` — case-sensitive.
   final String value;
@@ -237,7 +238,7 @@ class _GenreCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(data.icon, style: const TextStyle(fontSize: 24)),
+                Icon(data.icon, size: 24, color: AppColors.primary),
                 Text(
                   data.name,
                   style: GoogleFonts.playfairDisplay(

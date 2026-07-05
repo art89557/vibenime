@@ -128,6 +128,7 @@ class _EpisodeCard extends StatelessWidget {
                   Expanded(
                     child: _hasThumb
                         ? CachedNetworkImage(
+                            memCacheWidth: 480,
                             imageUrl: thumbnailUrl!,
                             fit: BoxFit.cover,
                             width: double.infinity,

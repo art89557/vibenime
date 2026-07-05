@@ -202,7 +202,11 @@ class _CompactAnimeTile extends ConsumerWidget {
                 height: 56,
                 child: cover.isEmpty
                     ? Container(color: AppColors.surfaceElevated(context))
-                    : CachedNetworkImage(imageUrl: cover, fit: BoxFit.cover),
+                    : CachedNetworkImage(
+                        imageUrl: cover,
+                        memCacheWidth: 300,
+                        fit: BoxFit.cover,
+                      ),
               ),
             ),
             const SizedBox(width: 12),
@@ -320,6 +324,7 @@ class _AnimeHistoryCard extends ConsumerWidget {
                     child: cover.isEmpty
                         ? Container(color: AppColors.surfaceHigh(context))
                         : CachedNetworkImage(
+                            memCacheWidth: 300,
                             imageUrl: cover,
                             fit: BoxFit.cover,
                           ),

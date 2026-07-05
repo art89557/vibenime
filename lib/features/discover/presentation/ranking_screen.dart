@@ -335,6 +335,7 @@ class _PosterCard extends StatelessWidget {
                     child: anime.coverImage.isEmpty
                         ? Container(color: AppColors.surfaceElevated(context))
                         : CachedNetworkImage(
+                            memCacheWidth: 800,
                             imageUrl: anime.coverImage,
                             fit: BoxFit.cover,
                           ),
@@ -487,6 +488,7 @@ class _RankTile extends StatelessWidget {
                       child: anime.coverImage.isEmpty
                           ? Container(color: AppColors.surface(context))
                           : CachedNetworkImage(
+                              memCacheWidth: 300,
                               imageUrl: anime.coverImage,
                               fit: BoxFit.cover,
                             ),

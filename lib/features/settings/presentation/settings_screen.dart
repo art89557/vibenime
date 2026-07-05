@@ -56,11 +56,6 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
-  // UI-only state for toggles
-  bool _watchParty = true;
-  bool _liveReactions = true;
-  String _activityVisibility = 'teman'; // 'teman' or 'publik'
-
   String _themeLabel(BuildContext context, ThemeMode mode) {
     switch (mode) {
       case ThemeMode.light:
@@ -110,12 +105,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
               const SizedBox(height: 16),
               for (final entry in [
-                ('id', 'Indonesia', '🇮🇩'),
-                ('en', 'English', '🇬🇧'),
-                ('system', context.l10n.settingsFollowSystem, '⚙'),
+                ('id', 'Indonesia', Icons.translate_rounded),
+                ('en', 'English', Icons.language_rounded),
+                (
+                  'system',
+                  context.l10n.settingsFollowSystem,
+                  Icons.settings_suggest_rounded,
+                ),
               ])
                 ListTile(
-                  leading: Text(entry.$3, style: const TextStyle(fontSize: 22)),
+                  leading: Icon(entry.$3, size: 22),
                   title: Text(entry.$2),
                   trailing: current == entry.$1
                       ? const Icon(
@@ -474,31 +473,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     await rescheduleEpisodeNotifications(ref);
                   },
                 ),
-                _SettingTile(
-                  title: context.l10n.settingsWatchParty,
-                  trailingText: _watchParty ? 'on' : 'off',
-                  trailingTextColor: AppColors.primary,
-                  onTap: () => setState(() => _watchParty = !_watchParty),
-                ),
-                _SettingTile(
-                  title: context.l10n.settingsMyActivity,
-                  trailingText: _activityVisibility == 'teman'
-                      ? context.l10n.privacyFriends
-                      : context.l10n.privacyPublic,
-                  onTap: () {
-                    setState(() {
-                      _activityVisibility = _activityVisibility == 'teman'
-                          ? 'publik'
-                          : 'teman';
-                    });
-                  },
-                ),
-                _SettingTile(
-                  title: context.l10n.settingsLiveReactions,
-                  trailingText: _liveReactions ? 'on' : 'off',
-                  trailingTextColor: AppColors.primary,
-                  onTap: () => setState(() => _liveReactions = !_liveReactions),
-                ),
+                // Toggle Watch Party / Aktivitas / Live Reactions DIHAPUS —
+                // sebelumnya UI-only (tidak tersimpan & tidak berefek).
+                // Privasi aktivitas dikelola di Edit Profil (PrivacyPrefs).
+                // Watch Party menyusul saat fiturnya benar-benar jalan.
               ],
             ),
 
