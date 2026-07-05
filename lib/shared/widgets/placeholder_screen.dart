@@ -29,7 +29,7 @@ class PlaceholderScreen extends StatelessWidget {
               const SizedBox(height: 16),
               Text(
                 title,
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.roboto(
                   fontSize: 22,
                   fontWeight: FontWeight.w600,
                 ),
@@ -38,9 +38,7 @@ class PlaceholderScreen extends StatelessWidget {
               Text(
                 message,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
-                  color: AppColors.textOnDarkMuted,
-                ),
+                style: GoogleFonts.roboto(color: AppColors.textMuted(context)),
               ),
             ],
           ),

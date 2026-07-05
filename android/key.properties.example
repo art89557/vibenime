@@ -1,0 +1,17 @@
+# VibeNime Release Signing Configuration
+# ---------------------------------------
+# 1. Generate keystore (sekali aja, simpan password aman!):
+#    keytool -genkey -v -keystore upload-keystore.jks ^
+#      -keyalg RSA -keysize 2048 -validity 10000 -alias vibenime
+#
+# 2. Pindah file .jks ke lokasi aman (DI LUAR repo!), mis:
+#    C:\Users\<you>\keystores\vibenime-upload.jks
+#
+# 3. Copy file ini jadi key.properties (TANPA .example), isi nilai di bawah:
+#
+# 4. JANGAN commit key.properties — sudah di-gitignore.
+
+storePassword=YOUR_KEYSTORE_PASSWORD_HERE
+keyPassword=YOUR_KEY_PASSWORD_HERE
+keyAlias=vibenime
+storeFile=C:/Users/your-name/keystores/vibenime-upload.jks

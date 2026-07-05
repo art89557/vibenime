@@ -3,74 +3,138 @@
 > Aplikasi streaming anime mobile bersubtitle Indonesia.
 > *"Vibe-mu, anime-mu."*
 
-Tugas kuliah pengembangan aplikasi mobile dengan **Flutter**, mengintegrasikan **AniList API** (metadata real) dan **sample HLS stream** (video player demo).
+Tugas kuliah pengembangan aplikasi mobile dengan **Flutter**, mengintegrasikan **AniList GraphQL API** (metadata) dan **Supabase** (auth + catalog + real-time Watch Party).
 
 ## Status
 
-🚧 **Fase Backend Dev — kode siap.** Tinggal register AniList OAuth client lalu jalan.
+✅ **Final — feature-complete + APK ready untuk demo.**
 
-## Setup (Cepat)
+---
 
-1. **Register OAuth client di AniList** — ikuti [docs/SETUP_ANILIST.md](./docs/SETUP_ANILIST.md) (5 menit)
-2. **Copy `.env.example` → `.env`** dan isi `ANILIST_CLIENT_ID`
-3. **Jalankan:**
-   ```bash
-   flutter pub get
-   flutter run
+## Fitur Utama
+
+| # | Fitur | Highlight |
+|---|-------|-----------|
+| 1 | **Auth Supabase email/password** | Register/login app-native, AniList jadi optional connector |
+| 2 | **Multi-source streaming** | 4-layer fallback chain: Supabase catalog → Consumet mirror → AniList trailer → Mux sample |
+| 3 | **Watch Party real-time** | Nonton bareng dengan chat + sync playback + presence count |
+| 4 | **Diskusi per anime** | Tab Diskusi dengan post text + emoji gift animated |
+| 5 | **Download offline** | dio download archive.org → Hive entry → BetterPlayer `file://` playback |
+| 6 | **Search + filter** | Genre AniList real + Year/Season/Format dropdown |
+| 7 | **My List sync (opsional)** | Profile → Connect AniList → sync watching/completed/planning |
+| 8 | **Admin panel** | Stats dashboard + bulk insert pattern/paste-list, role-gated |
+| 9 | **Episode picker + history** | Watched checkmark + resume position + hide unreleased |
+| 10 | **Offline-first auth** | Cache user info di secure_storage, boot tanpa internet |
+
+---
+
+## Setup (~10 menit)
+
+### 1. AniList OAuth client (untuk My List sync, optional)
+Ikuti [docs/SETUP_ANILIST.md](./docs/SETUP_ANILIST.md).
+
+### 2. Supabase project
+1. Buat project di https://supabase.com (free tier OK)
+2. **Authentication → Providers → Email**: Enable + **OFF "Confirm email"** (skip verifikasi untuk demo)
+3. **SQL Editor** — run urutan ini:
+   ```
+   sql/init.sql                 (tables video_sources)
+   sql/admin_rls.sql            (RLS policy write video_sources)
+   sql/multi_source_migration.sql (priority field)
+   sql/watch_party.sql          (tables + RLS Watch Party + chat)
+   sql/anime_discussions.sql    (tables + RLS Diskusi)
+   sql/watch_party_rls_fix.sql  (relax chat RLS + REPLICA IDENTITY)
+   sql/admin_setup.sql          (assign role 'admin' ke akun kamu)
    ```
 
-> Tidak perlu deploy backend. Sample HLS stream sudah hard-coded ke Mux test asset (legal & public).
+### 3. `.env` config
+Copy `.env.example` → `.env`, isi:
+```
+ANILIST_CLIENT_ID=40780                     # dari step 1
+SUPABASE_URL=https://xxx.supabase.co        # dari Supabase Settings → API
+SUPABASE_ANON_KEY=sb_publishable_xxx
+SAMPLE_STREAM_URL=https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8
+```
 
-## Catatan Penting tentang Streaming Source
+### 4. Run
+```powershell
+flutter pub get
+flutter run
+```
 
-Awalnya rencana memakai scraper publik (Consumet, lalu aniwatch-api). Selama Mei 2026, **kedua repo upstream tersebut kena DMCA takedown** dalam waktu 24 jam. Karena tidak reliable untuk demo akademik, VibeNime **pivot ke sample HLS stream** dengan abstraksi `StreamingRepository` yang siap di-swap ke provider berlisensi (Crunchyroll, Bilibili, iQiyi) di production.
+---
 
-Detail keputusan ini ada di [PRD.md §6.2](./PRD.md#62-technical-decision-streaming-source).
+## Auth Model
 
-## Dokumen
+**Primary**: Supabase email/password (di-set sebagai default semua user)
+**Optional**: AniList OAuth (Profile → Connect) untuk sync My List
 
-- 📄 [PRD.md](./PRD.md) — Product Requirements Document lengkap (v1.2)
-- 📘 [docs/SETUP_ANILIST.md](./docs/SETUP_ANILIST.md) — Register OAuth AniList
+| Aksi | Butuh Auth? |
+|------|-------------|
+| Browse / Search / Detail / Player | ❌ Tidak (mode tamu) |
+| Download offline | ❌ Tidak |
+| Watch Party / Diskusi / Chat | ✅ Supabase user |
+| My List (sync watchlist) | ✅ AniList connect |
+| Admin Panel | ✅ Supabase + `role = admin` (lihat `sql/admin_setup.sql`) |
 
-## Stack
+---
+
+## Stack Teknis
 
 | Kategori | Pilihan |
-| --- | --- |
+|----------|---------|
 | Framework | Flutter 3.x |
-| State | Riverpod |
-| Routing | go_router |
-| Player | better_player_plus (HLS + subtitle multi-track) |
-| Auth | OAuth Implicit Grant (AniList) via `flutter_web_auth_2` |
-| Storage | `flutter_secure_storage` (token) + Hive (history) |
-| HTTP | dio + dio_cache_interceptor |
-| GraphQL | graphql_flutter |
+| State | Riverpod 2.x |
+| Routing | go_router 14.x |
+| Player | better_player_plus (HLS/MP4) + youtube_player_flutter |
+| Auth | Supabase Auth (email/password) + AniList OAuth (optional) |
+| Backend | Supabase (Postgres + Realtime CDC + Presence) |
+| Metadata | AniList GraphQL (graphql_flutter) |
+| Storage | flutter_secure_storage (token cache) + Hive (history, downloads, search history) |
+| Download | dio (browser headers untuk archive.org) + path_provider |
+| HTTP | dio + dio_cache_interceptor (cacheFirst untuk AniList) |
+| Realtime | Supabase Realtime (CDC for chat + Presence for participant count) |
 
-## Apa yang Real & Apa yang Sample
+---
 
-| Fitur | Status |
-| --- | --- |
-| Login OAuth AniList | ✅ **Real** |
-| Trending / Popular / Top Rated / Upcoming | ✅ **Real** (AniList) |
-| Search anime | ✅ **Real** (AniList) |
-| Anime Detail (sinopsis, cover, info, score) | ✅ **Real** (AniList) |
-| Episode count | ✅ **Real** (dari AniList) |
-| Episode list (id + nomor) | 🟡 Disintesa dari count |
-| Video playback | 🟡 Sample HLS (Mux) |
-| Subtitle track switcher | 🟡 Track sample EN, slot ID kosong |
-| Quality switcher | ✅ Multi-bitrate dari sample HLS |
-| Add ke "Plan to Watch" | ✅ **Real** (mutation AniList) |
-| My List Sync (Watching/Planning/Completed) | ✅ **Real** (AniList) |
-| History resume | ✅ **Real** (Hive lokal) |
+## Dokumentasi
 
-## Roadmap
+- 📄 [PRD.md](./PRD.md) — Product Requirements
+- 📘 [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) — Layer diagram + tech stack
+- 🗺️ [docs/SCREEN_FLOW.md](./docs/SCREEN_FLOW.md) — User journey per flow
+- 🧪 [docs/TESTING.md](./docs/TESTING.md) — Unit + widget test guide
+- 🎨 [docs/8_GOLDEN_RULES.md](./docs/8_GOLDEN_RULES.md) — Shneiderman implementation
+- 🔧 [docs/SETUP_ANILIST.md](./docs/SETUP_ANILIST.md) — OAuth setup
+- 🗄️ [docs/SETUP_SUPABASE.md](./docs/SETUP_SUPABASE.md) — Supabase setup
+- ▶️ [docs/ADD_YOUTUBE_VIDEOS.md](./docs/ADD_YOUTUBE_VIDEOS.md) — Tambah source YouTube
 
-| Fase | Status |
-| --- | --- |
-| Planning (PRD) | ✅ Selesai |
-| Frontend Dev (proyek + theme + router + skeleton) | ✅ Selesai |
-| Backend Dev (AniList queries + sample streaming repo) | ✅ Selesai |
-| Integration (wire UI ke real data) | ⏳ Berikutnya |
-| Deploy (APK release) | ⏳ |
-| Testing (unit + widget test) | ⏳ |
+---
 
-Detail tiap fase ada di [PRD.md](./PRD.md).
+## Build APK Release
+
+```powershell
+flutter clean
+flutter pub get
+flutter test            # 44+ tests pass
+flutter analyze         # 0 issues
+flutter build apk --release
+```
+
+Output: `build/app/outputs/flutter-apk/app-release.apk` (~55 MB).
+
+Install: `adb install -r build/app/outputs/flutter-apk/app-release.apk`.
+
+---
+
+## Catatan Streaming Source
+
+Source streaming dikelola via Supabase `video_sources` table (per-episode, priority-ranked). Tambah via:
+- **Admin Panel** (in-app) — Bulk Insert pattern `{ep:03d}` atau Paste List
+- **Direct SQL** — `INSERT INTO video_sources (...)`
+
+Source yang sudah diuji:
+- **Internet Archive** (.mp4 direct) — Astro Boy, Berserk 1997, JJK S1-S2 — **bisa download offline**
+- **YouTube official** (Muse Asia, Ani-One Asia) — full episodes — streaming only
+- **Mux sample HLS** — fallback final untuk anime tanpa source
+
+Lihat plan [docs/SETUP_SUPABASE.md](./docs/SETUP_SUPABASE.md) untuk URL pattern Berserk lengkap.

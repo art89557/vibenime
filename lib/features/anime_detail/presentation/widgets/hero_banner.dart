@@ -3,116 +3,131 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/haptic_helper.dart';
 import '../../../../shared/models/anime.dart';
+import '../../../../core/theme/app_radius.dart';
 
-/// Hero banner di top Detail screen — banner image + gradient overlay +
-/// title + meta chips. Fixed height ~360 px dengan back button overlay.
-class HeroBanner extends StatelessWidget {
-  const HeroBanner({
-    required this.anime,
-    required this.onBack,
-    super.key,
-  });
+/// Background banner untuk `FlexibleSpaceBar` di SliverAppBar Detail —
+/// banner image + gradient gelap yang berakhir di `surfaceDark` supaya
+/// menyatu mulus dengan background page saat header mengkerut (collapse).
+///
+/// Poster cover + judul TIDAK di sini lagi — sekarang di [DetailTitleBlock]
+/// (section terpisah di bawah header yang ikut scroll normal).
+class DetailHeaderBackground extends StatelessWidget {
+  const DetailHeaderBackground({required this.anime, super.key});
 
   final Anime anime;
-  final VoidCallback onBack;
 
   @override
   Widget build(BuildContext context) {
-    final url = anime.bannerImage ?? anime.coverImage;
+    final bannerUrl = anime.bannerImage ?? anime.coverImage;
 
-    return SizedBox(
-      height: 360,
-      child: Stack(
-        fit: StackFit.expand,
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // Banner image
+        bannerUrl.isEmpty
+            ? Container(color: AppColors.surfaceElevated(context))
+            : CachedNetworkImage(imageUrl: bannerUrl, fit: BoxFit.cover),
+        // Dark overlay — fade ke surfaceDark di bawah supaya seamless ke konten.
+        DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Color.fromRGBO(11, 14, 20, 0.5),
+                Color.fromRGBO(11, 14, 20, 0.85),
+                AppColors.surface(context),
+              ],
+              stops: [0.0, 0.7, 1.0],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Blok judul Detail — poster cover (Hero) + studio·tahun + judul.
+///
+/// Dirender sebagai section tepat di bawah header collapsing, ikut scroll
+/// normal (lihat `AnimeDetailScreen`).
+class DetailTitleBlock extends StatelessWidget {
+  const DetailTitleBlock({required this.anime, super.key});
+
+  final Anime anime;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          // Background image.
-          if (url.isNotEmpty)
-            CachedNetworkImage(imageUrl: url, fit: BoxFit.cover)
-          else
-            Container(color: AppColors.surfaceDarkElevated),
-
-          // Gradient overlay biar text di atas tetap kebaca.
-          const Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Color.fromRGBO(15, 15, 26, 0.3),
-                    Color.fromRGBO(15, 15, 26, 0.7),
-                    AppColors.surfaceDark,
-                  ],
-                  stops: [0.0, 0.55, 1.0],
+          // Hero tag matches AnimeCard di Home — cover image fly smooth dari
+          // Home grid ke posisi ini saat navigasi.
+          Hero(
+            tag: 'cover-${anime.id}',
+            flightShuttleBuilder: (_, _, _, _, _) {
+              // Saat in-flight, render plain image tanpa parent styling
+              // supaya transition smooth tanpa flicker.
+              return ClipRRect(
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                child: anime.coverImage.isEmpty
+                    ? Container(color: AppColors.surfaceElevated(context))
+                    : CachedNetworkImage(
+                        imageUrl: anime.coverImage,
+                        fit: BoxFit.cover,
+                      ),
+              );
+            },
+            // SizedBox HARUS membungkus AspectRatio (bukan di dalamnya): di
+            // dalam Row, AspectRatio menerima lebar unbounded dan gagal layout.
+            // Lebar tetap 110 → AspectRatio hitung tinggi.
+            child: SizedBox(
+              width: 110,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+                child: AspectRatio(
+                  aspectRatio: 2 / 3,
+                  child: anime.coverImage.isEmpty
+                      ? Container(color: AppColors.surfaceElevated(context))
+                      : CachedNetworkImage(
+                          imageUrl: anime.coverImage,
+                          fit: BoxFit.cover,
+                        ),
                 ),
               ),
             ),
           ),
-
-          // Back button.
-          Positioned(
-            top: 0,
-            left: 4,
-            child: SafeArea(
-              child: IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
-                onPressed: onBack,
-              ),
-            ),
-          ),
-
-          // "Update Setiap Rabu" badge (kalau airing).
-          if (anime.isReleasing)
-            const Positioned(
-              top: 20,
-              right: 16,
-              child: SafeArea(
-                child: _UpdateBadge(),
-              ),
-            ),
-
-          // Title block + meta di bawah.
-          Positioned(
-            left: 16,
-            right: 16,
-            bottom: 16,
+          const SizedBox(width: 14),
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  anime.title,
-                  style: GoogleFonts.poppins(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                    height: 1.15,
+                  _topLine(anime),
+                  style: GoogleFonts.jetBrainsMono(
+                    fontSize: 11,
+                    letterSpacing: 1.5,
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-                if (anime.englishTitle != null &&
-                    anime.englishTitle != anime.title) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    anime.englishTitle!,
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      color: Colors.white70,
-                    ),
+                const SizedBox(height: 6),
+                Text(
+                  anime.displayTitle,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.playfairDisplay(
+                    fontSize: 24,
+                    fontStyle: FontStyle.italic,
+                    color: AppColors.textPrimary(context),
+                    height: 1.05,
                   ),
-                ],
-                const SizedBox(height: 12),
-                _MetaChipsRow(anime: anime),
-                if (anime.popularity != null) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    '${_formatViews(anime.popularity!)} popularity',
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      color: Colors.white60,
-                    ),
-                  ),
-                ],
+                ),
               ],
             ),
           ),
@@ -121,140 +136,72 @@ class HeroBanner extends StatelessWidget {
     );
   }
 
-  static String _formatViews(int n) {
-    if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(1)}M';
-    if (n >= 1000) return '${(n / 1000).toStringAsFixed(1)}K';
-    return n.toString();
-  }
-}
-
-class _UpdateBadge extends StatelessWidget {
-  const _UpdateBadge();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.black54,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.calendar_today_rounded,
-              size: 14, color: AppColors.warning),
-          const SizedBox(width: 6),
-          Text(
-            'Sedang Tayang',
-            style: GoogleFonts.poppins(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: AppColors.warning,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MetaChipsRow extends StatelessWidget {
-  const _MetaChipsRow({required this.anime});
-
-  final Anime anime;
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 6,
-      children: [
-        if (anime.averageScore != null)
-          _MetaPill(
-            icon: Icons.star_rounded,
-            iconColor: AppColors.warning,
-            label: (anime.averageScore! / 10).toStringAsFixed(2),
-          ),
-        if (anime.studio != null) _MetaPill(label: anime.studio!),
-        if (anime.seasonYear != null)
-          _MetaPill(label: '${_seasonLabel(anime.season)} ${anime.seasonYear}'),
-        if (anime.format != null) _MetaPill(label: _formatLabel(anime.format!)),
-      ],
-    );
+  static String _topLine(Anime a) {
+    final parts = <String>[];
+    if (a.studio != null) parts.add(a.studio!.toUpperCase());
+    if (a.seasonYear != null) {
+      final season = _seasonLabel(a.season);
+      parts.add('${a.seasonYear} $season'.trim());
+    }
+    return parts.join(' · ');
   }
 
   static String _seasonLabel(String? s) {
     switch (s) {
       case 'WINTER':
-        return 'Winter';
+        return 'WINTER';
       case 'SPRING':
-        return 'Spring';
+        return 'SPRING';
       case 'SUMMER':
-        return 'Summer';
+        return 'SUMMER';
       case 'FALL':
-        return 'Fall';
+        return 'FALL';
       default:
         return '';
     }
   }
-
-  static String _formatLabel(String f) {
-    switch (f) {
-      case 'TV':
-        return 'TV';
-      case 'TV_SHORT':
-        return 'TV Short';
-      case 'MOVIE':
-        return 'Movie';
-      case 'OVA':
-        return 'OVA';
-      case 'ONA':
-        return 'ONA';
-      case 'SPECIAL':
-        return 'Special';
-      default:
-        return f;
-    }
-  }
 }
 
-class _MetaPill extends StatelessWidget {
-  const _MetaPill({
-    required this.label,
-    this.icon,
+/// Circle icon button untuk top action bar (back + bookmark).
+///
+/// **Public** karena dipakai di `AnimeDetailScreen` (di luar HeroBanner)
+/// untuk action bar floating yang lebih responsive ke tap.
+class CircleIconButton extends StatelessWidget {
+  const CircleIconButton({
+    required this.icon,
+    required this.onTap,
     this.iconColor,
+    this.tooltip,
+    super.key,
   });
 
-  final String label;
-  final IconData? icon;
+  final IconData icon;
+  final VoidCallback onTap;
   final Color? iconColor;
+  final String? tooltip;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: Colors.black45,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: AppColors.warning.withValues(alpha: 0.4)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (icon != null) ...[
-            Icon(icon, size: 13, color: iconColor ?? Colors.white),
-            const SizedBox(width: 4),
-          ],
-          Text(
-            label,
-            style: GoogleFonts.inter(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: Colors.white,
-            ),
+    return SizedBox(
+      width: 44,
+      height: 44,
+      child: IconButton(
+        onPressed: () {
+          Haptic.light();
+          onTap();
+        },
+        tooltip: tooltip,
+        padding: EdgeInsets.zero,
+        iconSize: 20,
+        icon: Icon(icon, color: iconColor ?? Colors.white),
+        style: IconButton.styleFrom(
+          backgroundColor: AppColors.surfaceHigh(
+            context,
+          ).withValues(alpha: 0.75),
+          shape: CircleBorder(
+            side: BorderSide(color: AppColors.borderColor(context)),
           ),
-        ],
+        ),
       ),
     );
   }

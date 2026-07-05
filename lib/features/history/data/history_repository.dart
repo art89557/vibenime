@@ -36,6 +36,17 @@ class HistoryRepository {
     return latest;
   }
 
+  /// Semua entry untuk anime tertentu (per episode). Dipakai oleh
+  /// `watchedEpisodeIdsProvider` untuk render checkmark di episode grid.
+  List<HistoryEntry> allForAnime(int animeId) {
+    final result = <HistoryEntry>[];
+    for (final raw in _box.values) {
+      if (raw['animeId'] != animeId) continue;
+      result.add(HistoryEntry.fromJson(raw));
+    }
+    return result;
+  }
+
   /// Recent watched — 1 entry per anime (yang paling terakhir), sorted by waktu.
   /// Dipakai untuk section "Continue Watching" di Home.
   List<HistoryEntry> recentWatched({int limit = 10}) {
@@ -52,8 +63,44 @@ class HistoryRepository {
     return sorted.take(limit).toList();
   }
 
+  /// SEMUA entry (1 per episode), urut terbaru dulu — untuk layar Riwayat
+  /// Menonton (timeline grouped by tanggal).
+  List<HistoryEntry> allEntries() {
+    final list = _box.values.map(HistoryEntry.fromJson).toList()
+      ..sort((a, b) => b.watchedAt.compareTo(a.watchedAt));
+    return list;
+  }
+
+  /// Hapus 1 entry (1 episode) dari history.
+  Future<void> delete(int animeId, String episodeId) =>
+      _box.delete(HistoryEntry.storageKey(animeId, episodeId));
+
+  /// Hapus banyak entry sekaligus via storage key (multi-select di Riwayat).
+  Future<void> deleteKeys(Iterable<String> keys) => _box.deleteAll(keys);
+
+  /// Tandai 1 episode sebagai selesai ditonton (set posisi = durasi → checkmark
+  /// + isFinished true). No-op kalau durasi belum diketahui.
+  Future<void> markFinished(HistoryEntry entry) async {
+    final dur = entry.durationSeconds;
+    if (dur == null) return;
+    await save(
+      HistoryEntry(
+        animeId: entry.animeId,
+        episodeId: entry.episodeId,
+        episodeNumber: entry.episodeNumber,
+        positionSeconds: dur,
+        durationSeconds: dur,
+        watchedAt: DateTime.now(),
+      ),
+    );
+  }
+
   /// Stream perubahan box → trigger UI rebuild.
   Stream<void> watch() => _box.watch().map((_) {});
+
+  /// Raw access ke semua values di box — untuk provider yang butuh
+  /// hitung agregat (mis. profile stats total jam tonton).
+  Iterable<Map<dynamic, dynamic>> allEntriesRaw() => _box.values;
 
   Future<void> clear() => _box.clear();
 }

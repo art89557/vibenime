@@ -4,44 +4,50 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/models/anime.dart';
+import '../../../../core/theme/app_radius.dart';
 
-/// Row metadata di bawah video player: cover thumb + judul anime + episode + meta.
+/// Compact header v2 (sesuai screenshot 5): back arrow + title + episode info
+/// + 3 icon buttons di kanan (subtitle, download, brightness).
 class PlayerMetadataRow extends StatelessWidget {
   const PlayerMetadataRow({
     required this.anime,
     required this.episodeNumber,
+    required this.episodeTitle,
     required this.onBack,
     super.key,
   });
 
   final Anime anime;
   final int episodeNumber;
+  final String? episodeTitle;
   final VoidCallback onBack;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 12, 16, 12),
+      padding: const EdgeInsets.fromLTRB(8, 8, 12, 8),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           IconButton(
-            icon: const Icon(Icons.arrow_back),
+            icon: const Icon(Icons.arrow_back, size: 22),
             onPressed: onBack,
+            tooltip: 'Kembali',
           ),
+          // Cover thumbnail (small, 36×52)
           ClipRRect(
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(AppRadius.tiny),
             child: SizedBox(
-              width: 40,
-              height: 40,
+              width: 36,
+              height: 52,
               child: anime.coverImage.isEmpty
                   ? Container(color: AppColors.surfaceDarkElevated)
                   : CachedNetworkImage(
                       imageUrl: anime.coverImage,
                       fit: BoxFit.cover,
-                      errorWidget: (_, _, _) => Container(
-                        color: AppColors.surfaceDarkElevated,
-                      ),
+                      placeholder: (_, _) =>
+                          Container(color: AppColors.surfaceDarkElevated),
+                      errorWidget: (_, _, _) =>
+                          Container(color: AppColors.surfaceDarkElevated),
                     ),
             ),
           ),
@@ -52,41 +58,25 @@ class PlayerMetadataRow extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  anime.title,
+                  anime.displayTitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.poppins(
+                  style: GoogleFonts.roboto(
                     fontSize: 14,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textOnDark,
                   ),
                 ),
                 const SizedBox(height: 2),
-                Row(
-                  children: [
-                    Text(
-                      'Episode $episodeNumber',
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        color: AppColors.textOnDarkMuted,
-                      ),
-                    ),
-                    if (anime.averageScore != null) ...[
-                      const SizedBox(width: 8),
-                      const Icon(Icons.circle,
-                          size: 4, color: AppColors.textOnDarkMuted),
-                      const SizedBox(width: 8),
-                      const Icon(Icons.star_rounded,
-                          size: 12, color: AppColors.warning),
-                      const SizedBox(width: 2),
-                      Text(
-                        (anime.averageScore! / 10).toStringAsFixed(2),
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          color: AppColors.textOnDarkMuted,
-                        ),
-                      ),
-                    ],
-                  ],
+                Text(
+                  _buildSubtitle(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.jetBrainsMono(
+                    fontSize: 11,
+                    color: AppColors.textOnDarkMuted,
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ],
             ),
@@ -94,5 +84,11 @@ class PlayerMetadataRow extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _buildSubtitle() {
+    final ep = 'EP ${episodeNumber.toString().padLeft(2, '0')}';
+    if (episodeTitle == null || episodeTitle!.isEmpty) return ep;
+    return '$ep · $episodeTitle';
   }
 }

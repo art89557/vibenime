@@ -1,10 +1,6 @@
 /// Exception umum untuk error API (AniList & Consumet).
 class ApiException implements Exception {
-  ApiException({
-    required this.message,
-    this.statusCode,
-    this.source,
-  });
+  ApiException({required this.message, this.statusCode, this.source});
 
   final String message;
   final int? statusCode;

@@ -1,11 +1,13 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import '../../../../core/i18n/l10n_extension.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/router/app_routes.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/models/related_anime.dart';
+import '../../../../core/theme/app_radius.dart';
 
 /// Horizontal scroll "Anime Terkait".
 class RelatedAnimeSection extends StatelessWidget {
@@ -23,8 +25,8 @@ class RelatedAnimeSection extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
           child: Text(
-            'Anime Terkait',
-            style: GoogleFonts.poppins(
+            context.l10n.detailRelated,
+            style: GoogleFonts.roboto(
               fontSize: 18,
               fontWeight: FontWeight.w700,
             ),
@@ -64,16 +66,16 @@ class _RelatedCard extends StatelessWidget {
             Stack(
               children: [
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                   child: AspectRatio(
                     aspectRatio: 16 / 9,
                     child: item.coverImage.isEmpty
-                        ? Container(color: AppColors.surfaceDarkElevated)
+                        ? Container(color: AppColors.surfaceElevated(context))
                         : CachedNetworkImage(
                             imageUrl: item.coverImage,
                             fit: BoxFit.cover,
                             errorWidget: (_, _, _) => Container(
-                              color: AppColors.surfaceDarkElevated,
+                              color: AppColors.surfaceElevated(context),
                             ),
                           ),
                   ),
@@ -95,14 +97,17 @@ class _RelatedCard extends StatelessWidget {
             if (item.episodes != null)
               Row(
                 children: [
-                  const Icon(Icons.remove_red_eye_outlined,
-                      size: 12, color: AppColors.textOnDarkMuted),
+                  Icon(
+                    Icons.remove_red_eye_outlined,
+                    size: 12,
+                    color: AppColors.textMuted(context),
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     'Eps ${item.episodes}',
-                    style: GoogleFonts.inter(
+                    style: GoogleFonts.roboto(
                       fontSize: 11,
-                      color: AppColors.textOnDarkMuted,
+                      color: AppColors.textMuted(context),
                     ),
                   ),
                 ],
@@ -112,7 +117,7 @@ class _RelatedCard extends StatelessWidget {
               item.title,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.roboto(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
                 height: 1.25,
@@ -136,7 +141,7 @@ class _ScoreBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(
         color: Colors.black87,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -145,7 +150,7 @@ class _ScoreBadge extends StatelessWidget {
           const SizedBox(width: 2),
           Text(
             (score / 10).toStringAsFixed(2),
-            style: GoogleFonts.inter(
+            style: GoogleFonts.roboto(
               fontSize: 11,
               fontWeight: FontWeight.w600,
               color: Colors.white,
@@ -168,11 +173,11 @@ class _RelationBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
         color: AppColors.primary.withValues(alpha: 0.85),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(AppRadius.tiny),
       ),
       child: Text(
         label,
-        style: GoogleFonts.inter(
+        style: GoogleFonts.roboto(
           fontSize: 9,
           fontWeight: FontWeight.w600,
           color: Colors.white,

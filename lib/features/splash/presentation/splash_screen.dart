@@ -4,8 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/router/app_routes.dart';
+import '../../../core/settings/app_settings.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../auth/presentation/auth_controller.dart';
+import '../../auth/data/app_auth_repository.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -14,23 +15,78 @@ class SplashScreen extends ConsumerStatefulWidget {
   ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends ConsumerState<SplashScreen> {
+class _SplashScreenState extends ConsumerState<SplashScreen>
+    with TickerProviderStateMixin {
+  late final AnimationController _logoCtrl;
+  late final AnimationController _textCtrl;
+  late final Animation<double> _logoScale;
+  late final Animation<double> _logoOpacity;
+  late final Animation<double> _titleOpacity;
+  late final Animation<Offset> _titleSlide;
+  late final Animation<double> _taglineOpacity;
+
   @override
   void initState() {
     super.initState();
+
+    // Logo: scale-in dari 0.6 + opacity fade
+    _logoCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
+    _logoScale = CurvedAnimation(parent: _logoCtrl, curve: Curves.elasticOut);
+    _logoOpacity = CurvedAnimation(parent: _logoCtrl, curve: Curves.easeOut);
+
+    // Text: title slide up, tagline fade-in delayed
+    _textCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    );
+    _titleOpacity = CurvedAnimation(
+      parent: _textCtrl,
+      curve: const Interval(0.0, 0.5, curve: Curves.easeOut),
+    );
+    _titleSlide = Tween<Offset>(begin: const Offset(0, 0.4), end: Offset.zero)
+        .animate(
+          CurvedAnimation(
+            parent: _textCtrl,
+            curve: const Interval(0.0, 0.5, curve: Curves.easeOutCubic),
+          ),
+        );
+    _taglineOpacity = CurvedAnimation(
+      parent: _textCtrl,
+      curve: const Interval(0.5, 1.0, curve: Curves.easeOut),
+    );
+
+    // Sequenced: logo → text → bootstrap
+    _logoCtrl.forward().then((_) => _textCtrl.forward());
     WidgetsBinding.instance.addPostFrameCallback((_) => _bootstrap());
   }
 
-  Future<void> _bootstrap() async {
-    // Tampilkan splash minimal 1.2 detik biar branding kelihatan.
-    final minSplash = Future<void>.delayed(const Duration(milliseconds: 1200));
-    final isAuthed = ref.read(authControllerProvider.notifier).bootstrap();
+  @override
+  void dispose() {
+    _logoCtrl.dispose();
+    _textCtrl.dispose();
+    super.dispose();
+  }
 
-    final results = await Future.wait([minSplash, isAuthed]);
+  Future<void> _bootstrap() async {
+    // Tampilkan splash minimal 1.6 detik biar animasi selesai.
+    await Future<void>.delayed(const Duration(milliseconds: 1600));
     if (!mounted) return;
 
-    final ok = results[1] as bool;
-    context.go(ok ? AppRoutes.home : AppRoutes.login);
+    // **Gate routing:**
+    // 1. First launch (onboardingSeen=false) → onboarding
+    // 2. Sudah onboard + ada session → home
+    // 3. Sudah onboard + no session → login
+    final settings = ref.read(appSettingsProvider);
+    if (!settings.onboardingSeen) {
+      context.go(AppRoutes.onboarding);
+      return;
+    }
+
+    final hasSession = ref.read(appAuthRepositoryProvider).isAuthenticated;
+    context.go(hasSession ? AppRoutes.home : AppRoutes.login);
   }
 
   @override
@@ -40,44 +96,82 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 96,
-              height: 96,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [AppColors.primary, AppColors.secondary],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+            // Logo dengan scale + glow effect
+            FadeTransition(
+              opacity: _logoOpacity,
+              child: ScaleTransition(
+                scale: _logoScale,
+                child: Container(
+                  width: 100,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [AppColors.primary, AppColors.secondary],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(26),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.3),
+                        blurRadius: 24,
+                        spreadRadius: 4,
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.play_arrow_rounded,
+                    color: Colors.white,
+                    size: 56,
+                  ),
                 ),
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: const Icon(
-                Icons.play_arrow_rounded,
-                color: Colors.white,
-                size: 56,
               ),
             ),
-            const SizedBox(height: 24),
-            Text(
-              'VibeNime',
-              style: GoogleFonts.poppins(
-                fontSize: 32,
-                fontWeight: FontWeight.w700,
+            const SizedBox(height: 28),
+
+            // Title — slide up + fade
+            FadeTransition(
+              opacity: _titleOpacity,
+              child: SlideTransition(
+                position: _titleSlide,
+                child: Text(
+                  'VibeNime',
+                  style: GoogleFonts.playfairDisplay(
+                    fontSize: 38,
+                    fontStyle: FontStyle.italic,
+                    color: AppColors.textPrimary(context),
+                    height: 1.0,
+                  ),
+                ),
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              'Vibe-mu, anime-mu.',
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                color: AppColors.textOnDarkMuted,
+            const SizedBox(height: 6),
+
+            // Tagline — delayed fade-in
+            FadeTransition(
+              opacity: _taglineOpacity,
+              child: Text(
+                'Vibe-mu, anime-mu.',
+                style: GoogleFonts.roboto(
+                  fontSize: 14,
+                  letterSpacing: 1.2,
+                  color: AppColors.textMuted(context),
+                ),
               ),
             ),
-            const SizedBox(height: 32),
-            const SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(strokeWidth: 2),
+            const SizedBox(height: 40),
+
+            // Loading indicator — fade in dengan tagline
+            FadeTransition(
+              opacity: _taglineOpacity,
+              child: const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppColors.primary,
+                ),
+              ),
             ),
           ],
         ),

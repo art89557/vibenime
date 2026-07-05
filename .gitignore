@@ -47,3 +47,9 @@ app.*.map.json
 # Environment files
 .env
 !.env.example
+
+# Release signing — keystore credentials (jangan commit ke git!)
+android/key.properties
+android/app/upload-keystore.jks
+android/app/*.jks
+*.keystore

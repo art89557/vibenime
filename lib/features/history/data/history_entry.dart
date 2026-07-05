@@ -38,13 +38,13 @@ class HistoryEntry {
       '$animeId:$episodeId';
 
   Map<String, dynamic> toJson() => {
-        'animeId': animeId,
-        'episodeId': episodeId,
-        'episodeNumber': episodeNumber,
-        'positionSeconds': positionSeconds,
-        'durationSeconds': durationSeconds,
-        'watchedAt': watchedAt.millisecondsSinceEpoch,
-      };
+    'animeId': animeId,
+    'episodeId': episodeId,
+    'episodeNumber': episodeNumber,
+    'positionSeconds': positionSeconds,
+    'durationSeconds': durationSeconds,
+    'watchedAt': watchedAt.millisecondsSinceEpoch,
+  };
 
   factory HistoryEntry.fromJson(Map<dynamic, dynamic> json) {
     return HistoryEntry(

@@ -1,13 +1,16 @@
 {
-    "name": "vibenime",
-    "short_name": "vibenime",
+    "name": "VibeNime — Streaming Anime",
+    "short_name": "VibeNime",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
-    "orientation": "portrait-primary",
+    "background_color": "#0B0E14",
+    "theme_color": "#5DD3F0",
+    "description": "Streaming anime mobile bersubtitle Indonesia. Vibe-mu, anime-mu.",
+    "orientation": "any",
     "prefer_related_applications": false,
+    "categories": ["entertainment", "video", "music"],
+    "lang": "id",
+    "scope": ".",
     "icons": [
         {
             "src": "icons/Icon-192.png",

@@ -18,29 +18,111 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="VibeNime — streaming anime mobile bersubtitle Indonesia. Vibe-mu, anime-mu.">
+  <meta name="theme-color" content="#5DD3F0">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="vibenime">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="VibeNime">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Open Graph / social preview -->
+  <meta property="og:title" content="VibeNime — Streaming Anime">
+  <meta property="og:description" content="Vibe-mu, anime-mu. Streaming anime bersubtitle Indonesia.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="icons/Icon-512.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>vibenime</title>
+  <title>VibeNime — Streaming Anime</title>
   <link rel="manifest" href="manifest.json">
+
+  <style>
+    /* Native splash background — biar tidak white flash sebelum Flutter init */
+    html, body { background-color: #0B0E14; margin: 0; padding: 0; }
+    #loading {
+      position: fixed; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 12px;
+      background: #0B0E14; color: #EDF1F6;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    .spinner {
+      width: 32px; height: 32px;
+      border: 3px solid rgba(93, 211, 240, 0.2);
+      border-top-color: #5DD3F0;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
 </head>
 <body>
-  <!--
-    You can customize the "flutter_bootstrap.js" script.
-    This is useful to provide a custom configuration to the Flutter loader
-    or to give the user feedback during the initialization process.
+  <!-- Loading splash — di-replace setelah Flutter mount -->
+  <div id="loading">
+    <div class="spinner"></div>
+    <div>Memuat VibeNime…</div>
+  </div>
 
-    For more details:
-    * https://docs.flutter.dev/platform-integration/web/initialization
-  -->
+  <!-- PWA install prompt banner — muncul kalau Chrome/Edge fire
+       beforeinstallprompt event (PWA installable). User bisa dismiss
+       atau Install. Hide otomatis kalau sudah installed. -->
+  <div id="pwa-install-banner" style="display:none;position:fixed;bottom:16px;left:16px;right:16px;max-width:420px;margin:0 auto;background:#131822;border:1px solid #1F2632;border-radius:14px;padding:14px 16px;display:none;align-items:center;gap:12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#EDF1F6;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,0.4);">
+    <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#5DD3F0,#FF8FA3);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
+    </div>
+    <div style="flex:1;min-width:0;">
+      <div style="font-weight:600;font-size:13px;margin-bottom:2px;">Install VibeNime</div>
+      <div style="font-size:11px;color:#8B95A5;">Akses cepat tanpa buka browser tiap kali.</div>
+    </div>
+    <button id="pwa-install-btn" style="background:#5DD3F0;color:#0B0E14;border:none;border-radius:8px;padding:8px 14px;font-weight:600;font-size:12px;cursor:pointer;flex-shrink:0;">Install</button>
+    <button id="pwa-dismiss-btn" style="background:transparent;color:#8B95A5;border:none;font-size:18px;cursor:pointer;flex-shrink:0;padding:4px 8px;line-height:1;">×</button>
+  </div>
+
   <script src="flutter_bootstrap.js" async></script>
+  <script>
+    // Sembunyikan splash setelah Flutter render frame pertama
+    window.addEventListener('flutter-first-frame', function() {
+      var loading = document.getElementById('loading');
+      if (loading) loading.remove();
+    });
+
+    // PWA install prompt — capture event lalu show banner kustom
+    var deferredPrompt = null;
+    var banner = document.getElementById('pwa-install-banner');
+    var installBtn = document.getElementById('pwa-install-btn');
+    var dismissBtn = document.getElementById('pwa-dismiss-btn');
+
+    window.addEventListener('beforeinstallprompt', function(e) {
+      e.preventDefault();
+      deferredPrompt = e;
+      // Cek apakah user pernah dismiss (localStorage flag)
+      if (localStorage.getItem('pwa-banner-dismissed') === 'true') return;
+      banner.style.display = 'flex';
+    });
+
+    installBtn.addEventListener('click', async function() {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      var result = await deferredPrompt.userChoice;
+      console.log('PWA install:', result.outcome);
+      deferredPrompt = null;
+      banner.style.display = 'none';
+    });
+
+    dismissBtn.addEventListener('click', function() {
+      banner.style.display = 'none';
+      // Persist supaya tidak muncul lagi di session future
+      localStorage.setItem('pwa-banner-dismissed', 'true');
+    });
+
+    // Kalau app sudah installed (display-mode: standalone), hide banner
+    window.addEventListener('appinstalled', function() {
+      banner.style.display = 'none';
+      deferredPrompt = null;
+    });
+  </script>
 </body>
 </html>

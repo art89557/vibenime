@@ -52,10 +52,9 @@ class RelatedAnime {
       result.add(
         RelatedAnime(
           id: (node['id'] as num).toInt(),
-          title: (title['english'] ??
-                  title['romaji'] ??
-                  title['native'] ??
-                  '?') as String,
+          title:
+              (title['english'] ?? title['romaji'] ?? title['native'] ?? '?')
+                  as String,
           coverImage: (cover['medium'] ?? cover['large'] ?? '') as String,
           relationType: relType,
           format: node['format'] as String?,
