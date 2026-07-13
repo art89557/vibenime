@@ -8,6 +8,7 @@ import '../../downloads/data/download_option.dart';
 import '../../../core/utils/youtube_url.dart';
 import '../../../shared/models/episode.dart';
 import '../../../shared/models/stream_source.dart';
+import 'aniwatch_client.dart';
 import 'indo_anime_client.dart';
 import 'miruro_client.dart';
 import 'video_catalog_repository.dart';
@@ -79,20 +80,28 @@ abstract class StreamingRepository {
 ///
 /// **Urutan render player (default = index 0):**
 /// 1. Supabase `video_sources` (manual catalog, priority-ranked — override admin)
-/// 2. **Sanka (sub Indo) — PRIMARY** (Samehadaku/Otakudesu, auto by judul)
+/// 2. **Sanka (sub Indo)** (Samehadaku/Otakudesu, auto by judul)
 /// 3. Sankanime embed (sub Indo, opsional via `.env`)
-/// 4. **Miruro (EN) — SECONDARY** (M3U8 + intro/outro; user bisa pilih English)
-/// 5. AniList YouTube trailer (kalau ada)
-/// 6. Mux sample HLS (final fallback — selalu available)
+/// 4. **Aniwatch (EN) — PRIMARY English** (M3U8 + subtitle + intro/outro, self-host)
+/// 5. **Miruro (EN)** — fallback English (kalau HF Space hidup)
+/// 6. AniList YouTube trailer (kalau ada)
+/// 7. Mux sample HLS (final fallback — selalu available)
 ///
-/// User memilih sub Indo / English lewat source picker di player.
+/// Grup EN vs Indo diurut sesuai [SubtitlePref]; user tetap bisa override lewat
+/// source picker di player.
 class CompositeStreamingRepository implements StreamingRepository {
   /// Construct dengan dependency injection.
-  CompositeStreamingRepository(this._catalog, this._indoApi, this._miruro);
+  CompositeStreamingRepository(
+    this._catalog,
+    this._indoApi,
+    this._miruro,
+    this._aniwatch,
+  );
 
   final VideoCatalogRepository _catalog;
   final IndoAnimeClient _indoApi;
   final MiruroClient _miruro;
+  final AniwatchClient _aniwatch;
 
   /// Source situs Indonesia yang dicoba berurutan (sub Indo).
   static const _indoSources = <(String id, String label)>[
@@ -135,6 +144,16 @@ class CompositeStreamingRepository implements StreamingRepository {
     final miruroF = _guardOne(
       () => _fetchMiruroPayload(anilistId, episodeNumber),
     );
+    final aniwatchF = animeTitle.trim().isEmpty
+        ? Future<StreamPayload?>.value(null)
+        : _guardOne(
+            () => _fetchAniwatchPayload(
+              anilistId: anilistId,
+              animeTitle: animeTitle,
+              altTitles: altTitles,
+              episodeNumber: episodeNumber,
+            ),
+          );
     final indoFs = animeTitle.trim().isEmpty
         ? const <Future<StreamPayload?>>[]
         : _indoSources
@@ -157,17 +176,19 @@ class CompositeStreamingRepository implements StreamingRepository {
     // sankanime embed → miruro (EN) → youtube → mux. Default play = index 0
     // (sub Indo); user bisa pilih English (Miruro) lewat source picker.
     final catalog = await catalogF;
+    final aniwatch = await aniwatchF;
     final miruro = await miruroF;
     final indo = await Future.wait(indoFs);
 
     // Grup sub Indo (Sanka/Samehadaku/Otakudesu + Sankanime embed) vs English
-    // (Miruro). Urutan ditentukan preferensi user [SubtitlePref] → source utama
-    // (index 0, auto-play) ikut pilihan; sisanya tetap pickable di player.
+    // (Aniwatch utama + Miruro fallback). Urutan ditentukan preferensi user
+    // [SubtitlePref] → source utama (index 0, auto-play) ikut pilihan; sisanya
+    // tetap pickable di player.
     final indoGroup = <StreamPayload>[
       for (final p in indo) ?p,
       ?_buildSankanimeEmbed(animeTitle, episodeNumber),
     ];
-    final enGroup = <StreamPayload>[?miruro];
+    final enGroup = <StreamPayload>[?aniwatch, ?miruro];
     final preferEnglish = SubtitlePref.current == SubtitleLanguage.english;
 
     final payloads = <StreamPayload>[
@@ -281,6 +302,35 @@ class CompositeStreamingRepository implements StreamingRepository {
       introEnd: m.introEnd,
       outroStart: m.outroStart,
       outroEnd: m.outroEnd,
+    );
+  }
+
+  /// Layer 1.5a′: aniwatch-api (HiAnime, M3U8 + subtitle, sub EN). Cari by judul
+  /// (best-match) → resolve episodeId → ambil HLS + subtitle + intro/outro.
+  /// Di-skip otomatis kalau `ANIWATCH_API_URL` kosong (client return null).
+  Future<StreamPayload?> _fetchAniwatchPayload({
+    required int anilistId,
+    required String animeTitle,
+    required List<String> altTitles,
+    required int episodeNumber,
+  }) async {
+    final a = await _aniwatch.fetch(
+      anilistId: anilistId,
+      animeTitle: animeTitle,
+      altTitles: altTitles,
+      episodeNumber: episodeNumber,
+    );
+    if (a == null || a.isEmpty) return null;
+    return StreamPayload(
+      sources: a.sources,
+      subtitles: a.subtitles,
+      headers: a.headers,
+      sourceId: 'aniwatch',
+      sourceLabel: 'Aniwatch (EN)',
+      introStart: a.introStart,
+      introEnd: a.introEnd,
+      outroStart: a.outroStart,
+      outroEnd: a.outroEnd,
     );
   }
 
@@ -418,5 +468,6 @@ final streamingRepositoryProvider = Provider<StreamingRepository>((ref) {
     ref.watch(videoCatalogRepositoryProvider),
     ref.watch(indoAnimeClientProvider),
     ref.watch(miruroClientProvider),
+    ref.watch(aniwatchClientProvider),
   );
 });

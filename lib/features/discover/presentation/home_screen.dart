@@ -24,6 +24,7 @@ import '../../history/data/watch_history_sync_coordinator.dart';
 import '../../history/presentation/history_item_menu.dart';
 import '../../history/presentation/history_providers.dart';
 import '../../notifications/data/episode_airing_repository.dart';
+import '../../player/data/aniwatch_client.dart';
 import '../../player/data/miruro_client.dart';
 import '../data/anime_repository.dart';
 import '../data/for_you_repository.dart';
@@ -58,7 +59,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       // Sinkron progress nonton + favorit dari cloud (no-op guest/offline).
       syncWatchHistory(ref);
       syncFavorites(ref);
-      // Bangunkan Miruro HF Space lebih awal (source player utama).
+      // Bangunkan source English lebih awal: Aniwatch (utama) + Miruro (fallback).
+      ref.read(aniwatchClientProvider).warmup();
       ref.read(miruroClientProvider).warmup();
     });
   }

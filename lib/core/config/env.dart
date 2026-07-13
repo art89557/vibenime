@@ -71,6 +71,22 @@ class Env {
   /// dengan `ALLOWED_ORIGINS` kosong menerima Referer apa pun).
   static String get miruroApiKey => dotenv.maybeGet('MIRURO_API_KEY') ?? '';
 
+  /// Self-hosted **aniwatch-api** base URL — sumber streaming English utama
+  /// (github.com/ghoshRitesh12/aniwatch-api, pembungkus HiAnime). Balas M3U8 +
+  /// subtitle .vtt + intro/outro. Resolve by judul (best-match), di-pair AniList.
+  ///
+  /// Deploy Docker 1-baris: `docker run -d -p 4000:4000
+  /// ghcr.io/ghoshritesh12/aniwatch` (atau Render/Railway 1-klik). Set
+  /// `ANIWATCH_API_URL` di `.env` (base TANPA trailing slash, mis.
+  /// `https://my-aniwatch.onrender.com`). Client tambah path `/api/v2/hianime/...`.
+  ///
+  /// Kosong = source Aniwatch di-skip (tak ada demo publik andal — wajib
+  /// self-host).
+  static String get aniwatchApiUrl => dotenv.maybeGet('ANIWATCH_API_URL') ?? '';
+
+  /// True kalau backend aniwatch-api self-hosted sudah di-set.
+  static bool get isAniwatchConfigured => aniwatchApiUrl.isNotEmpty;
+
   /// **Sankanime** (sub Indonesia) — template URL halaman tonton yang
   /// di-embed lewat WebView (lihat `_WebViewPlayerView`). Sankanime adalah SPA
   /// di-proteksi Cloudflare tanpa API publik, jadi integrasi pakai embed URL

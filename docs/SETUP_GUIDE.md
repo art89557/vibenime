@@ -214,7 +214,66 @@ App otomatis: cari judul anime → resolve episodeId → ambil stream. Hasilnya:
 
 ---
 
-## Bagian 4B — CARA 3: Miruro-API (M3U8 langsung, sub EN) — paling andal
+## Bagian 4A′ — CARA 3: aniwatch-api (HiAnime, sub EN) — sumber English UTAMA
+
+Pembungkus **HiAnime** (github.com/ghoshRitesh12/aniwatch-api) yang balas
+**M3U8/HLS langsung** + subtitle `.vtt` + timestamp intro/outro. Aktif dirawat
+(2026), jadi ganti **utama** untuk sub English (Miruro jadi fallback). App
+resolve **by judul** (best-match token-overlap) lalu di-pair AniList — tak perlu
+input manual. Main mulus di `better_player`.
+
+> **Wajib self-host.** Tak ada demo publik andal (semua kena rate-limit/banned).
+> Beban deploy = 1 container Docker, sama seperti Miruro.
+
+### Step 4A′.1 — Jalankan (Docker 1-baris)
+```bash
+docker run -d -p 4000:4000 --name aniwatch ghcr.io/ghoshritesh12/aniwatch
+# cek: curl "http://localhost:4000/api/v2/hianime/search?q=naruto"
+```
+Tanpa Docker (Node ≥18):
+```bash
+git clone https://github.com/ghoshRitesh12/aniwatch-api.git
+cd aniwatch-api && npm i && npm start   # default port 4000
+```
+
+### Step 4A′.2 — Deploy (1-klik)
+- **Render**: New → **Web Service** → Runtime **Docker**, image
+  `ghcr.io/ghoshritesh12/aniwatch` (atau connect repo fork) → Deploy. Dapat
+  `https://xxx.onrender.com`.
+- **Railway**: New Project → Deploy from repo fork (auto-detect) → Generate Domain.
+- Repo juga punya tombol **Deploy to Render/Vercel** di README-nya.
+
+> ⚠️ **CORS:** set env `ANIWATCH_API_CORS_ALLOWED_ORIGINS` di server bila perlu
+> membatasi origin. App mobile (native) tak kena CORS — aman default.
+
+### Step 4A′.3 — Set di .env
+```
+ANIWATCH_API_URL=https://<deploy-kamu>
+```
+(TANPA trailing slash). App tambah path `/api/v2/hianime/...` otomatis. Restart
+app (`flutter run` ulang).
+
+### Step 4A′.4 — Test backend
+```bash
+curl "https://<url>/api/v2/hianime/search?q=frieren"
+# → { success:true, data:{ animes:[ { id:"...", name:"..." }, ... ] } }
+curl "https://<url>/api/v2/hianime/episode/sources?animeEpisodeId=<epId>&server=hd-1&category=sub"
+# → { success:true, data:{ sources:[{url:".../master.m3u8",type:"hls"}], tracks:[...], intro, outro } }
+```
+Di app: buka anime TV → **Watch** → source **"Aniwatch (EN)"** muncul → M3U8 main
+dengan subtitle. Kalau `Bahasa Subtitle = English` di Settings, Aniwatch jadi
+auto-play (index 0).
+
+### Step 4A′.5 — Catatan
+- **Sub EN**: soft-sub VTT + intro/outro (dipakai tombol Skip). Kosong → fallback
+  AniSkip.
+- Kalau CDN (megacloud) balas 403: app **otomatis** meneruskan header `Referer`
+  dari `data.headers` respons ke player.
+- Tetap **link aggregator** — sertakan disclaimer. Server hanya kamu yang pakai.
+
+---
+
+## Bagian 4B — CARA 4: Miruro-API (M3U8 langsung, sub EN) — fallback English
 
 Backend Python yang balas **M3U8/HLS langsung** + subtitle + timestamp
 intro/outro, di-index pakai **AniList ID** (tak perlu tebak judul). Sub Inggris.
@@ -327,6 +386,7 @@ Catatan:
 | Video cuma loading, tidak main | Cek URL valid (buka di browser dulu), pastikan Source Type cocok dengan URL |
 | "Tidak ada sumber tersedia" | Fallback Mux harusnya selalu ada — cek `SAMPLE_STREAM_URL` di `.env` tidak kosong |
 | Source Otakudesu/Samehadaku tidak muncul | `ANIME_API_URL` belum di-set / instance mati — test `curl ".../otakudesu/search?q=naruto"` dulu |
+| Source "Aniwatch (EN)" tidak muncul | `ANIWATCH_API_URL` belum di-set / backend mati — test `curl ".../api/v2/hianime/search?q=naruto"` (harus `success:true`) |
 | Source "Miruro (EN)" tidak muncul | `MIRURO_API_URL` belum di-set / backend mati — test `curl ".../episodes/178005"` |
 | Miruro muncul tapi M3U8 403/loading | Provider tsedang block — pilih anime/episode lain atau source lain di dropdown |
 | Source muncul tapi cuma loading | Kemungkinan embed gagal load — coba source lain di dropdown, atau buka di HP |
@@ -344,13 +404,17 @@ Saat buka episode, `streamPayloadsProvider` kumpulkan source dari 4 layer:
 
 ```
 Layer 1   : video_sources (admin manual)       ← CARA 1
-Layer 1.5 : wajik-anime-api (Otakudesu/Samehadaku, scraping)  ← CARA 2
+Layer 1.5 : Sanka/wajik-anime-api (Samehadaku/Otakudesu, sub Indo)  ← CARA 2
+Layer 1.5a: aniwatch-api (HiAnime, sub EN)     ← CARA 3 (English UTAMA)
+Layer 1.5b: Miruro-API (M3U8, sub EN)          ← CARA 4 (English fallback)
 Layer 2   : YouTube trailer (dari AniList)
 Layer 3   : Mux sample stream (SELALU ada)
 
-SEMUA layer di-append jadi daftar source SEJAJAR (hybrid). Player render
-source pertama; user bisa pilih bebas via dropdown picker. Auto-switch ke
-source berikutnya hanya kalau yang aktif error saat playback.
+Grup EN (Aniwatch → Miruro) vs Indo (Sanka + Sankanime) diurut sesuai setting
+"Bahasa Subtitle": preferensi jadi index 0 (auto-play). SEMUA layer tetap
+di-append jadi daftar SEJAJAR (hybrid) — user bisa pilih bebas via dropdown
+picker. Auto-switch ke source berikutnya hanya kalau yang aktif error saat
+playback.
 
 Render per jenis: YouTube → YoutubePlayer · embed iframe → WebView ·
 direct .mp4/.m3u8 → better_player.
@@ -358,7 +422,9 @@ direct .mp4/.m3u8 → better_player.
 
 **File terkait:**
 - `lib/features/player/data/streaming_repository.dart` — gabung semua layer
-- `lib/features/player/data/indo_anime_client.dart` — client wajik-anime-api
+- `lib/features/player/data/aniwatch_client.dart` — client aniwatch-api (EN)
+- `lib/features/player/data/miruro_client.dart` — client Miruro-API (EN)
+- `lib/features/player/data/indo_anime_client.dart` — client Sanka/wajik (Indo)
 - `lib/features/player/presentation/player_screen.dart` — 3 jenis player + picker
 - `lib/features/admin/presentation/admin_form_screen.dart` — form input source
 - `lib/core/utils/source_type.dart` — daftar source type
