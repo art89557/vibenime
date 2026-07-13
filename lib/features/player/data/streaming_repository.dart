@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/config/constants.dart';
@@ -223,7 +224,8 @@ class CompositeStreamingRepository implements StreamingRepository {
   Future<List<T>> _guardList<T>(Future<List<T>> Function() task) async {
     try {
       return await task().timeout(TimingConstants.sourceFetchTimeout);
-    } catch (_) {
+    } catch (e) {
+      debugPrint('🎬 [guard:list] gagal: $e');
       return <T>[];
     }
   }
@@ -235,7 +237,8 @@ class CompositeStreamingRepository implements StreamingRepository {
   ) async {
     try {
       return await task().timeout(TimingConstants.sourceFetchTimeout);
-    } catch (_) {
+    } catch (e) {
+      debugPrint('🎬 [guard:source] gagal: $e');
       return null;
     }
   }

@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/settings/app_settings.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../shared/widgets/play_pulse_logo.dart';
 import '../../auth/data/app_auth_repository.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
@@ -101,30 +102,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
               opacity: _logoOpacity,
               child: ScaleTransition(
                 scale: _logoScale,
-                child: Container(
-                  width: 100,
-                  height: 100,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [AppColors.primary, AppColors.secondary],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(26),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.3),
-                        blurRadius: 24,
-                        spreadRadius: 4,
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.play_arrow_rounded,
-                    color: Colors.white,
-                    size: 56,
-                  ),
-                ),
+                child: const PlayPulseLogo(size: 128),
               ),
             ),
             const SizedBox(height: 28),

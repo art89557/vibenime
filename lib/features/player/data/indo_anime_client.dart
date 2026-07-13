@@ -67,7 +67,10 @@ class IndoAnimeClient {
   /// Cache: `{source}:{judul-ternormalisasi}` → animeId.
   final _animeIdCache = <String, String>{};
 
-  String get _base => Env.isAnimeApiConfigured ? Env.animeApiUrl : _publicDemo;
+  /// Base aktif. Mulai dari `ANIME_API_URL` (kalau di-set), tapi **fallback
+  /// otomatis & sticky** ke [_publicDemo] (Sanka) begitu base ter-konfigurasi
+  /// gagal resolve — self-host basi tidak boleh mematikan Indo-sub.
+  late String _base = Env.isAnimeApiConfigured ? Env.animeApiUrl : _publicDemo;
 
   /// Fetch streaming untuk [animeTitle] episode [episodeNumber] dari [source].
   /// [source] = `samehadaku` / `otakudesu`. [altTitles] = judul alternatif
@@ -83,6 +86,38 @@ class IndoAnimeClient {
     final candidates = _titleCandidates(animeTitle, altTitles);
     if (candidates.isEmpty) return null;
 
+    var result = await _fetchOnce(
+      source: source,
+      anilistId: anilistId,
+      candidates: candidates,
+      episodeNumber: episodeNumber,
+    );
+
+    // Base ter-konfigurasi gagal total → coba ulang via Sanka publik (sticky
+    // untuk sisa sesi; cache di-reset karena id antar-base tidak kompatibel).
+    if (result == null && _base != _publicDemo) {
+      debugPrint(
+        '🎬 [indo:$source] base configured gagal → fallback ke Sanka publik',
+      );
+      _base = _publicDemo;
+      _episodeIdCache.clear();
+      _animeIdCache.clear();
+      result = await _fetchOnce(
+        source: source,
+        anilistId: anilistId,
+        candidates: candidates,
+        episodeNumber: episodeNumber,
+      );
+    }
+    return result;
+  }
+
+  Future<IndoFetchResult?> _fetchOnce({
+    required String source,
+    required int anilistId,
+    required List<String> candidates,
+    required int episodeNumber,
+  }) async {
     try {
       final episodeId = await _resolveEpisodeId(
         source: source,
@@ -229,19 +264,25 @@ class IndoAnimeClient {
     final cached = _episodeIdCache[cacheKey];
     if (cached != null) return cached;
 
-    // Coba tiap kandidat judul sampai ketemu animeId + episodeId.
+    // Coba tiap kandidat judul sampai ketemu animeId + episodeId. Tiap kandidat
+    // diisolasi try/catch → satu judul yang bikin API error (500/timeout) tidak
+    // mematikan kandidat berikutnya yang valid.
     for (final title in candidates) {
-      final animeId = await _searchAnimeId(source: source, title: title);
-      if (animeId == null) continue;
+      try {
+        final animeId = await _searchAnimeId(source: source, title: title);
+        if (animeId == null) continue;
 
-      final episodeId = await _findEpisodeId(
-        source: source,
-        animeId: animeId,
-        episodeNumber: episodeNumber,
-      );
-      if (episodeId != null) {
-        _episodeIdCache[cacheKey] = episodeId;
-        return episodeId;
+        final episodeId = await _findEpisodeId(
+          source: source,
+          animeId: animeId,
+          episodeNumber: episodeNumber,
+        );
+        if (episodeId != null) {
+          _episodeIdCache[cacheKey] = episodeId;
+          return episodeId;
+        }
+      } catch (e) {
+        debugPrint('🎬 [indo:$source] kandidat "$title" error: $e — lanjut');
       }
     }
     return null;
@@ -296,6 +337,11 @@ class IndoAnimeClient {
     );
     final data = _dataObject(res);
     final animeList = data?['animeList'] as List?;
+    // Diagnostik jalur senyap: status + jumlah hasil (body HTML/blok → null).
+    debugPrint(
+      '🎬 [indo:$source] search "$title" → status=${res.statusCode} '
+      'hits=${animeList?.length ?? 'null(body ${res.data.runtimeType})'}',
+    );
     if (animeList == null || animeList.isEmpty) return null;
 
     // Pilih match TERBAIK (token-overlap), bukan asal hasil pertama — kurangi
@@ -352,6 +398,10 @@ class IndoAnimeClient {
     );
     final data = _dataObject(res);
     final episodeList = data?['episodeList'] as List?;
+    debugPrint(
+      '🎬 [indo:$source] anime/$animeId → status=${res.statusCode} '
+      'eps=${episodeList?.length ?? 'null'}',
+    );
     if (episodeList == null || episodeList.isEmpty) return null;
 
     final eps = episodeList.cast<Map<String, dynamic>>();
@@ -472,7 +522,11 @@ class IndoAnimeClient {
   Options get _opts => Options(
     sendTimeout: const Duration(seconds: 8),
     receiveTimeout: const Duration(seconds: 12),
-    validateStatus: (s) => s != null && s < 500,
+    // Terima SEMUA status (termasuk 5xx/4xx) → jangan lempar. Sanka kadang
+    // balas 500 untuk judul tertentu (mis. judul English dgn ":"); kalau
+    // dilempar, kandidat judul berikutnya (yang valid) tak pernah dicoba.
+    // Body non-Map/kosong → di-handle jadi "tak ada hasil" downstream.
+    validateStatus: (s) => s != null && s < 600,
   );
 
   void resetCache() {

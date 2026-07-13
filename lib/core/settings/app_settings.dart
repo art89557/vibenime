@@ -22,7 +22,7 @@ class AppSettings {
     this.autoSkip = false,
     this.reduceAnimations = false,
     this.titleLanguage = TitleLanguage.romaji,
-    this.subtitleLanguage = SubtitleLanguage.indonesian,
+    this.subtitleLanguage = SubtitleLanguage.english,
     this.subtitleSize = SubtitleSize.medium,
     this.notifEpisodes = false,
   });

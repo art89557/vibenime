@@ -8,9 +8,11 @@ enum SubtitleLanguage {
 
   String get storageKey => name;
 
+  // Default = English → **Miruro jadi source utama** (M3U8 langsung, lebih
+  // andal dari scraper Indo). User bisa ganti ke Indonesia di Settings.
   static SubtitleLanguage fromStorage(String? raw) => switch (raw) {
-    'english' => SubtitleLanguage.english,
-    _ => SubtitleLanguage.indonesian,
+    'indonesian' => SubtitleLanguage.indonesian,
+    _ => SubtitleLanguage.english,
   };
 }
 
@@ -21,5 +23,5 @@ enum SubtitleLanguage {
 class SubtitlePref {
   SubtitlePref._();
 
-  static SubtitleLanguage current = SubtitleLanguage.indonesian;
+  static SubtitleLanguage current = SubtitleLanguage.english;
 }
