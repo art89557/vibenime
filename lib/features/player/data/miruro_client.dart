@@ -99,14 +99,40 @@ class MiruroClient {
   Future<Map<String, dynamic>?> _getProviders(int anilistId) async {
     final cached = _episodesCache[anilistId];
     if (cached != null) return cached;
-    final res = await _dio.get<Map<String, dynamic>>(
+    // Retry sekali kalau 503/502 (HF Space cold-start / sedang bangun).
+    Response<Map<String, dynamic>> res;
+    res = await _dio.get<Map<String, dynamic>>(
       '$_base/episodes/$anilistId',
       options: _opts,
     );
+    if ((res.statusCode == 503 || res.statusCode == 502)) {
+      await Future<void>.delayed(const Duration(seconds: 3));
+      res = await _dio.get<Map<String, dynamic>>(
+        '$_base/episodes/$anilistId',
+        options: _opts,
+      );
+    }
     final providers = res.data?['providers'] as Map<String, dynamic>?;
     if (providers == null || providers.isEmpty) return null;
     _episodesCache[anilistId] = providers;
     return providers;
+  }
+
+  /// Ping ringan untuk "membangunkan" HF Space yang tidur (fire-and-forget).
+  /// Dipanggil saat app launch supaya Miruro siap saat user mulai nonton.
+  Future<void> warmup() async {
+    if (!Env.isMiruroConfigured) return;
+    try {
+      await _dio.get<dynamic>(
+        '$_base/',
+        options: Options(
+          receiveTimeout: const Duration(seconds: 3),
+          validateStatus: (_) => true,
+        ),
+      );
+    } catch (_) {
+      /* fire-and-forget */
+    }
   }
 
   /// Daftar episodeId kandidat (lintas provider) untuk episode ke-N,
@@ -225,7 +251,8 @@ class MiruroClient {
   Options get _opts => Options(
     sendTimeout: const Duration(seconds: 8),
     receiveTimeout: const Duration(seconds: 20),
-    validateStatus: (s) => s != null && s < 500,
+    // Terima 5xx tanpa lempar → bisa retry 503 (HF Space cold-start).
+    validateStatus: (s) => s != null && s < 600,
   );
 
   void resetCache() => _episodesCache.clear();
